@@ -4,6 +4,9 @@ This project is designed to manage time-series data for Lightning Network node c
 
 ## Project Structure
 
+python 3.11.3
+poetry 1.5.1
+
 ```
 lightning-node-db
 ├── src
@@ -12,17 +15,17 @@ lightning-node-db
 │   ├── db
 │   │   ├── __init__.py
 │   │   ├── database.py
-│   │   └── models.py
+│   │   └── models.py(no use)
 │   ├── api
 │   │   ├── __init__.py
 │   │   ├── lightning_client.py
-│   │   └── node_service.py
+│   │   └── node_service.py(no use)
 │   ├── utils
 │   │   ├── __init__.py
 │   │   └── config.py
 │   └── cli
 │       ├── __init__.py
-│       └── commands.py
+│       └── gitdb.py
 ├── data
 │   └── .gitkeep
 ├── tests
@@ -52,7 +55,7 @@ lightning-node-db
 
 2. Install the required packages:
    ```
-   pip install -r requirements.txt
+   poetry install
    ```
 
 3. Configure the application by editing `config.yaml` to set database connection details and retention periods.
@@ -61,19 +64,12 @@ lightning-node-db
 
 To run the application, execute the following command:
 ```
-python src/main.py
+poetry run python src/main.py
 ```
 
 You can also use command-line options to manage old data:
 ```
 python src/main.py --delete <number_of_months>
-```
-
-## Testing
-
-To run the tests, use:
-```
-pytest tests/
 ```
 
 ## Contributing
