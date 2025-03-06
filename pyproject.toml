@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "lightning-node-db"
+version = "0.1.0"
+description = ""
+authors = ["kazuW <35624002+kazuW@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "lightning_node_db"}]
+
+[tool.poetry.dependencies]
+python = "3.11.3"
+requests = "^2.32.3"
+pyyaml = "^6.0.2"
+click = "^8.1.8"
+pytest = "^8.3.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
