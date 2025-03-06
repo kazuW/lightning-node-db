@@ -1,24 +1,15 @@
-from argparse import ArgumentParser
-from src.db.database import Database
-from src.api.lightning_client import get_channel_lists, get_channel_data
+#!/usr/bin/env python3
+import sys
+import os
+from pathlib import Path
 
-def main():
-    parser = ArgumentParser(description="Lightning Node Database CLI")
-    parser.add_argument('--delete', type=int, help='Delete data older than x months')
+# プロジェクトのルートディレクトリをシステムパスに追加
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-    args = parser.parse_args()
-
-    db = Database()
-
-    if args.delete:
-        db.delete_old_data(args.delete)
-
-    channel_lists = get_channel_lists()
-    db.update_channel_lists(channel_lists)
-
-    for channel in channel_lists:
-        channel_data = get_channel_data(channel['channel_id'])
-        db.update_channel_data(channel['id'], channel_data)
+# main モジュールをインポート
+from src.main import main
 
 if __name__ == "__main__":
-    main()
+    # CLIとして実行
+    sys.exit(main())
