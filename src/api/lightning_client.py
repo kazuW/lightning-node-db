@@ -83,6 +83,7 @@ def delete_old_data(db_connection, months):
 def get_amboss_fee(remote_pubkey, config=None):
     """
     Amboss APIから指定されたノードの手数料情報を取得する
+    整数値に変換して返す
     エラーが発生した場合はデフォルト値を返す
     """
     # デフォルト値を設定
@@ -121,14 +122,14 @@ def get_amboss_fee(remote_pubkey, config=None):
         }
         """
 
-        # クエリの変数 - 文字列補間を修正
+        # クエリの変数
         variables = {
-            "pubkey": remote_pubkey  # 文字列補間ではなく変数をそのまま使用
+            "pubkey": remote_pubkey
         }
 
-        # ヘッダー設定を修正 - タプルではなく辞書として設定
+        # ヘッダー設定
         headers = {
-            'Authorization': f'Bearer {api_key}',  # カンマではなくコロン、文字列補間も修正
+            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
 
@@ -149,12 +150,13 @@ def get_amboss_fee(remote_pubkey, config=None):
             
             fee = channels.get('fee_info', {}).get('remote', {}).get('weighted_corrected')
             if fee is not None:
-                return fee
+                # 浮動小数点数を整数に変換（小数点以下切り捨て）
+                return int(float(fee))
             
             print(f"ノード {remote_pubkey} の手数料情報が取得できませんでした。デフォルト値を返します。")
             return default_fee
             
-        except (KeyError, IndexError) as e:
+        except (KeyError, IndexError, ValueError) as e:
             print(f"手数料情報のパース中にエラーが発生しました: {e}")
             return default_fee
 
