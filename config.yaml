@@ -1,0 +1,16 @@
+database:
+  path: "data/lightning_node.db"
+  retention_period_months: 3
+
+lightning:
+  node_id: "anonymous"
+  api_url: "https://127.0.0.1:8080"  # Replace with your Lightning node API URL
+  macaroon_path: "C:/Users/user/AppData/Local/Lnd/data/chain/bitcoin/mainnet/admin.macaroon"  # macaroon path
+  tls_path: "C:/Users/user/AppData/Local/Lnd/tls.cert"  # tls path
+
+amboss:
+  api_key: "your amboss api key"
+  api_url: "https://api.amboss.space"
+
+options:
+  delete_old_data: false  # Set to true to enable automatic deletion of old data
