@@ -219,7 +219,8 @@ class Database:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
         # ログファイルパスを設定
-        log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
+        #log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
+        log_dir = "D:\PY2015\lightning-node-db\logs"
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, 'channel_changes.log')
         

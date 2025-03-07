@@ -22,7 +22,12 @@ def get_channel_lists(config=None):
     macaroon = codecs.encode(open(macaroon_path, 'rb').read(), 'hex')
     headers = {'Grpc-Metadata-macaroon': macaroon}
     
-    response = requests.get(url, headers=headers, verify=tls_path)
+     # alias
+    params = {
+        "peer_alias_lookup": "true"
+    }
+
+    response = requests.get(url, headers=headers, verify=tls_path, params=params)
     response.raise_for_status()
 
     # APIレスポンスから必要なデータを抽出
