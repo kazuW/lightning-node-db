@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+from pathlib import Path
 
 # インポートパスをプロジェクトルートに設定（最初に実行）
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -13,7 +14,6 @@ from src.api.lightning_client import get_channel_lists, get_channel_data, get_am
 from src.utils.config import Config  # load_config ではなく Config をインポート
 
 def main(delete_old_data=None):
-    # Config クラスのインスタンスを作成して使用
     config = Config()
     db = Database(config.get_database_config().get('path'))
 
