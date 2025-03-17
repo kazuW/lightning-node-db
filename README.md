@@ -71,7 +71,8 @@ You can also use command-line options to manage old data:
 ```
 python src/main.py --delete <number_of_months>
 ```
-
+"By running it periodically, you will accumulate data."　　
+　　
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
