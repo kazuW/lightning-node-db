@@ -26,7 +26,7 @@ def resource_path(relative_path):
     
     return os.path.join(base_path, relative_path), is_exe
 
-def main(delete_old_data=None):
+def main(delete_old_data=None, update=False):
     # リソースパスとexe環境かどうかを取得
     config_path, is_exe = resource_path('config.yaml')
     
@@ -63,6 +63,15 @@ def main(delete_old_data=None):
     # Initialize database and create tables
     db.initialize()
 
+    # アップデートモードの場合、channel_datasテーブルに'active'カラムを追加して終了
+    if update:
+        print("データベースの更新を実行しています...")
+        db.add_active_column_to_channel_datas()
+        print("データベースの更新が完了しました。")
+        return
+
+    # 通常モード: データ取得と更新
+    
     # Retrieve channel lists and update database
     # Config オブジェクトを渡す
     channel_lists = get_channel_lists(config)
@@ -82,6 +91,7 @@ def main(delete_old_data=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lightning Node Database Management")
     parser.add_argument('--delete', type=int, help="Delete data older than x months")
+    parser.add_argument('--update', action='store_true', help="Update database schema only (add 'active' column to channel_datas)")
     args = parser.parse_args()
 
-    main(delete_old_data=args.delete)
+    main(delete_old_data=args.delete, update=args.update)

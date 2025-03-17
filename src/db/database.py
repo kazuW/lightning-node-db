@@ -68,6 +68,7 @@ class Database:
                     remote_infee INTEGER,
                     num_updates INTEGER,
                     amboss_fee INTEGER,
+                    active INTEGER,
                     FOREIGN KEY (channel_id) REFERENCES channel_lists (channel_id)
                   );'''
         try:
@@ -190,11 +191,9 @@ class Database:
             placeholders = ', '.join(['?'] * len(channel_ids_to_delete))
             
             # チャンネルデータを削除 (外部キー制約のため先に削除)
+            # 修正: channel_datasテーブルのカラムはidではなくchannel_idを参照する
             sql_delete_data = f"""DELETE FROM channel_datas 
-                                 WHERE id IN (
-                                    SELECT id FROM channel_lists 
-                                    WHERE channel_id IN ({placeholders})
-                                 );"""
+                                 WHERE channel_id IN ({placeholders});"""
             cursor.execute(sql_delete_data, channel_ids_to_delete)
             
             # チャンネル自体を削除
@@ -273,8 +272,8 @@ class Database:
         """Insert channel data for a specific channel."""
         sql = '''INSERT INTO channel_datas 
                  (channel_id, date, local_balance, local_fee, local_infee, 
-                  remote_balance, remote_fee, remote_infee, num_updates, amboss_fee)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'''
+                  remote_balance, remote_fee, remote_infee, num_updates, amboss_fee, active)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'''
         try:
             if channel.get('remote_pubkey', '') == data.get('node1_pub', ''):
                 remote_fee = data.get('node1_policy', {}).get('fee_rate_milli_msat', 0)
@@ -287,6 +286,8 @@ class Database:
                 local_fee = data.get('node1_policy', {}).get('fee_rate_milli_msat', 0)
                 local_infee = data.get('node1_policy', {}).get('inbound_fee_rate_milli_msat', 0)
             
+            active_stat = int(channel.get('active', False))
+
             cursor = self.conn.cursor()
             cursor.execute(sql, (
                 channel.get('chan_id', ''),
@@ -298,7 +299,8 @@ class Database:
                 remote_fee,
                 remote_infee,
                 channel.get('num_updates', 0),
-                amboss_fee
+                amboss_fee,
+                active_stat
             ))
             self.conn.commit()
         except Error as e:
@@ -352,3 +354,35 @@ class Database:
         except Error as e:
             print(f"バルク挿入エラー: {e}")
             return 0
+
+    def add_active_column_to_channel_datas(self):
+        """channel_datasテーブルにactiveカラムを追加し、既存のレコードを1に設定する"""
+        try:
+            # カラムが既に存在するかチェック
+            cursor = self.conn.cursor()
+            cursor.execute("PRAGMA table_info(channel_datas)")
+            columns = [column[1] for column in cursor.fetchall()]
+            
+            if 'active' not in columns:
+                print("'active'カラムをchannel_datasテーブルに追加しています...")
+                
+                # トランザクションを開始
+                self.conn.execute("BEGIN TRANSACTION")
+                
+                # 新しいカラムを追加
+                self.conn.execute("ALTER TABLE channel_datas ADD COLUMN active INTEGER DEFAULT 1")
+                
+                # 既存のレコードすべてに対してactive=1を設定
+                self.conn.execute("UPDATE channel_datas SET active = 1")
+                
+                # トランザクションをコミット
+                self.conn.commit()
+                
+                print("'active'カラムの追加が完了しました")
+            else:
+                print("'active'カラムは既に存在しています")
+                
+        except Exception as e:
+            self.conn.rollback()
+            print(f"データベース更新中にエラーが発生しました: {e}")
+            raise
