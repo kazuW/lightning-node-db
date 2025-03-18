@@ -31,29 +31,77 @@ class Database:
             print(f"Database connection error: {e}")
             return False
     
-    def initialize(self):
-        """Initialize the database by creating necessary tables."""
+    def initialize(self, update_channel=False):
+        """必要なテーブルを作成してデータベースを初期化します。"""
         if not self.conn:
             if not self.connect():
                 return False
-                
-        self.create_channel_lists_table()
+        
+        # update_channel フラグが True の場合、channel_lists テーブルを再構築
+        if update_channel:
+            self.rebuild_channel_lists_table()
+        else:
+            self.create_channel_lists_table()
+            
         self.create_channel_datas_table()
         return True
-    
+
+    def rebuild_channel_lists_table(self):
+        """channel_lists テーブルを削除し、更新されたスキーマで再作成します。"""
+        try:
+            cursor = self.conn.cursor()
+            
+            # トランザクション開始
+            self.conn.execute("BEGIN TRANSACTION")
+            
+            # 一時的に外部キー制約を無効化
+            self.conn.execute("PRAGMA foreign_keys = OFF")
+            
+            # channel_datas テーブルのデータをバックアップ（またはチャンネルIDを保存）
+            cursor.execute("SELECT DISTINCT channel_id FROM channel_datas")
+            channel_ids = [row[0] for row in cursor.fetchall()]
+            
+            # 既存のテーブルを削除
+            cursor.execute("DROP TABLE IF EXISTS channel_lists")
+            
+            # 新しいスキーマでテーブルを作成
+            self.create_channel_lists_table()
+            
+            # 外部キー制約を再度有効化
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            
+            # トランザクションをコミット
+            self.conn.commit()
+            print("channel_point カラムを追加して channel_lists テーブルの再構築に成功しました")
+            
+            # 重要な警告を表示
+            if channel_ids:
+                print(f"警告: {len(channel_ids)} 件のチャンネルが channel_datas テーブルから参照されています。")
+                print("これらのチャンネル情報を channel_lists に再登録してください。そうしないとデータ整合性が失われます。")
+        except Error as e:
+            # エラー時はロールバック
+            self.conn.rollback()
+            # 外部キー制約を確実に再有効化
+            try:
+                self.conn.execute("PRAGMA foreign_keys = ON")
+            except:
+                pass
+            print(f"channel_lists テーブル再構築中にエラー発生: {e}")
+
     def create_channel_lists_table(self):
-        """Create the channel_lists table."""
+        """channel_lists テーブルを作成します。"""
         sql = '''CREATE TABLE IF NOT EXISTS channel_lists (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     channel_name TEXT NOT NULL,
                     channel_id TEXT NOT NULL UNIQUE,
+                    channel_point TEXT,
                     capacity INTEGER NOT NULL
                   );'''
         try:
             cursor = self.conn.cursor()
             cursor.execute(sql)
         except Error as e:
-            print(f"Error creating channel_lists table: {e}")
+            print(f"channel_lists テーブル作成中にエラー発生: {e}")
     
     def create_channel_datas_table(self):
         """Create the channel_datas table with channel_id as foreign key."""
@@ -110,7 +158,8 @@ class Database:
                 # チャンネルを更新またはインサート
                 result = self.update_channel(
                     channel.get('peer_alias', ''), 
-                    channel_id, 
+                    channel_id,
+                    channel.get('channel_point', ''),  # channel_point を追加
                     channel.get('capacity', 0)
                 )
                 
@@ -145,7 +194,7 @@ class Database:
         if not self.conn:
             self.connect()
             
-        sql = "SELECT id, channel_id, channel_name, capacity FROM channel_lists;"
+        sql = "SELECT id, channel_id, channel_name, channel_point, capacity FROM channel_lists;"
         try:
             cursor = self.conn.cursor()
             cursor.execute(sql)
@@ -154,7 +203,8 @@ class Database:
                 'id': row[0],
                 'channel_id': row[1],
                 'channel_name': row[2],
-                'capacity': row[3]
+                'channel_point': row[3],
+                'capacity': row[4]
             } for row in rows]
         except Error as e:
             print(f"Error retrieving channels: {e}")
@@ -219,7 +269,7 @@ class Database:
         
         # ログファイルパスを設定
         #log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
-        log_dir = "D:\PY2015\lightning-node-db\logs"
+        log_dir = "D:\LightningNetwork\lightning-node-db\logs"
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, 'channel_changes.log')
         
@@ -252,20 +302,21 @@ class Database:
         print(f"- 削除: {len(deleted)}件")
         print(f"詳細ログは {log_file} に保存されました。")
 
-    def update_channel(self, channel_name, channel_id, capacity):
-        """Update or insert a channel in the channel_lists table using UTF-8 encoding."""
-        sql = '''INSERT INTO channel_lists (channel_name, channel_id, capacity)
-                 VALUES (?, ?, ?)
+    def update_channel(self, channel_name, channel_id, channel_point, capacity):
+        """UTF-8エンコーディングを使用してchannel_listsテーブルにチャンネルを更新または挿入します。"""
+        sql = '''INSERT INTO channel_lists (channel_name, channel_id, channel_point, capacity)
+                 VALUES (?, ?, ?, ?)
                  ON CONFLICT(channel_id) DO UPDATE SET
                  channel_name=excluded.channel_name,
+                 channel_point=excluded.channel_point,
                  capacity=excluded.capacity;'''
         try:
             cursor = self.conn.cursor()
-            cursor.execute(sql, (channel_name, channel_id, capacity))
+            cursor.execute(sql, (channel_name, channel_id, channel_point, capacity))
             self.conn.commit()
             return cursor.lastrowid
         except Error as e:
-            print(f"Error updating channel: {e}")
+            print(f"チャンネル更新中にエラー発生: {e}")
             return None
     
     def update_channel_data(self, channel, data, amboss_fee):
@@ -341,13 +392,13 @@ class Database:
         if not channels:
             return 0
             
-        sql = '''INSERT OR IGNORE INTO channel_lists (channel_name, channel_id, capacity)
-                 VALUES (?, ?, ?);'''
+        sql = '''INSERT OR IGNORE INTO channel_lists (channel_name, channel_id, channel_point, capacity)
+                 VALUES (?, ?, ?, ?);'''
         
         try:
             cursor = self.conn.cursor()
             # executemany を使用して一括処理
-            values = [(ch.get('peer_alias', ''), ch.get('chan_id', ''), ch.get('capacity', 0)) 
+            values = [(ch.get('peer_alias', ''), ch.get('chan_id', ''), ch.get('channel_point', ''), ch.get('capacity', 0)) 
                      for ch in channels]
             cursor.executemany(sql, values)
             return cursor.rowcount

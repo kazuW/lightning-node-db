@@ -26,7 +26,7 @@ def resource_path(relative_path):
     
     return os.path.join(base_path, relative_path), is_exe
 
-def main(delete_old_data=None, update=False):
+def main(delete_old_data=None, update_add_active=False, update_channel=False):
     # リソースパスとexe環境かどうかを取得
     config_path, is_exe = resource_path('config.yaml')
     
@@ -61,10 +61,19 @@ def main(delete_old_data=None, update=False):
     db = Database(db_path)
     
     # Initialize database and create tables
-    db.initialize()
+    # update_channel フラグを渡す
+    db.initialize(update_channel=update_channel)
+
+    # update_channel モードの場合はメッセージを表示
+    if update_channel:
+        print("channel_lists テーブルを更新し、channel_point カラムを追加しました。")
+        # channel_listsを取得してデータベースにアップデートして終了
+        channel_lists = get_channel_lists(config)
+        db.update_channel_lists(channel_lists)
+        return
 
     # アップデートモードの場合、channel_datasテーブルに'active'カラムを追加して終了
-    if update:
+    if update_add_active:
         print("データベースの更新を実行しています...")
         db.add_active_column_to_channel_datas()
         print("データベースの更新が完了しました。")
@@ -80,8 +89,7 @@ def main(delete_old_data=None, update=False):
     # Retrieve channel data and update database
     for channel in channel_lists:
         channel_data = get_channel_data(channel['chan_id'], config)
-        #amboss_fee = get_amboss_fee(channel['remote_pubkey'], config)
-        amboss_fee = get_amboss_fee("039cdd937f8d83fb2f78c8d7ddc92ae28c9dbb5c4827181cfc80df60dee1b7bf19", config)
+        amboss_fee = get_amboss_fee(channel['remote_pubkey'], config)
         db.update_channel_data(channel, channel_data, amboss_fee)
 
     # Optionally delete old data
@@ -91,7 +99,8 @@ def main(delete_old_data=None, update=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Lightning Node Database Management")
     parser.add_argument('--delete', type=int, help="Delete data older than x months")
-    parser.add_argument('--update', action='store_true', help="Update database schema only (add 'active' column to channel_datas)")
+    parser.add_argument('--update_add_active', action='store_true', help="Update database schema only (add 'active' column to channel_datas)")
+    parser.add_argument('--update_channel', action='store_true', help="Update channel_lists table structure to add channel_point column")
     args = parser.parse_args()
 
-    main(delete_old_data=args.delete, update=args.update)
+    main(delete_old_data=args.delete, update_add_active=args.update_add_active, update_channel=args.update_channel)
