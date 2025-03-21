@@ -86,7 +86,7 @@ poetry run python src/main.py
 ```
 python src/main.py --delete <number_of_months>
 ```
-「定期的に実行することで、データの増大を防ぎます。」　
+「定期的に実行することで、時系列データがデータベースに蓄積されます。」　
 　　
 
 ## ライセンス
