@@ -1,8 +1,8 @@
 # Lightning Node Database
 
-This project is designed to manage time-series data for Lightning Network node channels using SQLite3. It provides functionality to retrieve channel lists and channel data, update the database, and optionally delete old data based on a specified retention period.
+このプロジェクトは、SQLite3を使用してLightning Networkノードチャネルのための時系列データを管理するように設計されています。チャネルリストとチャネルデータの取得、データベースの更新、および指定された保持期間に基づいて古いデータを削除するオプション機能を提供します。
 
-## Project Structure
+## プロジェクト構造
 
 python 3.11.3
 poetry 1.5.1
@@ -25,7 +25,7 @@ lightning-node-db
 │   │   └── config.py
 │   └── cli
 │       ├── __init__.py
-│       └── gitdb.py
+│       └── lnddb.py
 ├── data
 │   └── .gitkeep
 ├── tests
@@ -33,50 +33,62 @@ lightning-node-db
 │   ├── test_database.py
 │   └── test_node_service.py
 ├── config.yaml
-├── requirements.txt
-├── setup.py
 └── README.md
 ```
 
-## Features
+## 機能
 
-1. **Channel List Management**: Retrieve and update the list of channels from the Lightning Network node.
-2. **Channel Data Storage**: Store time-series data for each channel, including balances and fees.
-3. **Data Retention**: Optionally delete old data based on a specified retention period.
-4. **SQLite3 Database**: Utilize SQLite3 for lightweight and efficient data storage.
+1. **チャネルリスト管理**: Lightning Networkノードからチャネルのリストを取得し更新します。
+2. **チャネルデータ保存**: 各チャネルの残高や手数料を含む時系列データを保存します。
+3. **データ保持**: 指定された保持期間に基づいて古いデータを削除するオプション。
+4. **SQLite3データベース**: 軽量で効率的なデータ保存のためにSQLite3を使用します。
 
-## Installation
+## インストール
 
-1. Clone the repository:
+1. リポジトリをクローンします:
    ```
    git clone <repository-url>
    cd lightning-node-db
    ```
 
-2. Install the required packages:
+2. 必要なパッケージをインストールします:
    ```
    poetry install
    ```
 
-3. Configure the application by editing `config.yaml` to set database connection details and retention periods.
+3. config.yamlを編集してデータベース接続の詳細と保持期間を設定し、アプリケーションを構成します。
 
-## Usage
+### config.yamlの設定パラメータ
 
-To run the application, execute the following command:
+```yaml
+database:
+  path: "data/lightning_nodes.db"  # データベースファイルのパス
+  retention_period_months: 3    # "--delete"オプションで３か月分保存して他は削除
+
+lightning:
+  api_url: "https://127.0.0.1:8080"  # Lightning node API アドレス
+  macaroon_path:  "C:/XXXX/XXXX" # macaroonファイルのパス
+  tls_path: "C:/XXXX/XXXX" # ファイルのパス
+
+amboss:
+  api_key: "your amboss api key" # ambossにアクセスするための API KEY
+  api_url: "https://api.amboss.space"
+```
+
+## 使用方法
+
+アプリケーションを実行するには、次のコマンドを実行します:
 ```
 poetry run python src/main.py
 ```
 
-You can also use command-line options to manage old data:
+また、コマンドラインオプションを使用して古いデータを管理することもできます:
 ```
 python src/main.py --delete <number_of_months>
 ```
-"By running it periodically, you will accumulate data."　　
+「定期的に実行することで、データの増大を防ぎます。」　
 　　
-## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+## ライセンス
 
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
+このプロジェクトはMITライセンスの下でライセンスされています。詳細はLICENSEファイルをご覧ください。
