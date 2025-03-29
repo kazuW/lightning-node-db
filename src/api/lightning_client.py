@@ -22,18 +22,21 @@ def get_channel_lists(config=None):
     macaroon = codecs.encode(open(macaroon_path, 'rb').read(), 'hex')
     headers = {'Grpc-Metadata-macaroon': macaroon}
     
-     # alias
+    # alias
     params = {
         "peer_alias_lookup": "true"
     }
 
-    response = requests.get(url, headers=headers, verify=tls_path, params=params)
-    response.raise_for_status()
-
-    # APIレスポンスから必要なデータを抽出
-    channel_lists_data = response.json().get('channels', [])
-
-    return channel_lists_data
+    try:
+        response = requests.get(url, headers=headers, verify=tls_path, params=params)
+        response.raise_for_status()
+        
+        # APIレスポンスから必要なデータを抽出
+        channel_lists_data = response.json().get('channels', [])
+        return channel_lists_data
+    except requests.exceptions.RequestException as e:
+        # エラー発生時は、空のリストを返す
+        return []
 
 def get_channel_data(channel_id, config=None):
     if not config:
@@ -52,12 +55,14 @@ def get_channel_data(channel_id, config=None):
     macaroon = codecs.encode(open(macaroon_path, 'rb').read(), 'hex')
     headers = {'Grpc-Metadata-macaroon': macaroon}
 
-    response = requests.get(url, headers=headers, verify=tls_path)
-    response.raise_for_status()
-
-    channel_data = response.json()
-
-    return channel_data
+    try:
+        response = requests.get(url, headers=headers, verify=tls_path)
+        response.raise_for_status()
+        channel_data = response.json()
+        return channel_data
+    except requests.exceptions.RequestException as e:
+        # エラー発生時は、エラー情報を含むディクショナリを返す
+        return {"error": True, "message": str(e)}
 
 def update_channel_list(db_connection, channel_data):
     cursor = db_connection.cursor()

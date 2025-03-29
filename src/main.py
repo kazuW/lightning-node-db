@@ -84,11 +84,17 @@ def main(delete_old_data=None, update_add_active=False, update_channel=False):
     # Retrieve channel lists and update database
     # Config オブジェクトを渡す
     channel_lists = get_channel_lists(config)
-    db.update_channel_lists(channel_lists)
+    if channel_lists:  # 空のリストの場合はスキップ
+        db.update_channel_lists(channel_lists)
 
     # Retrieve channel data and update database
     for channel in channel_lists:
         channel_data = get_channel_data(channel['chan_id'], config)
+        # エラーチェック
+        if channel_data.get("error"):
+            print(f"チャンネル {channel['chan_id']} のデータ取得中にエラーが発生しました: {channel_data.get('message')}")
+            continue
+        
         amboss_fee = get_amboss_fee(channel['remote_pubkey'], config)
         db.update_channel_data(channel, channel_data, amboss_fee)
 
