@@ -437,3 +437,13 @@ class Database:
             self.conn.rollback()
             print(f"データベース更新中にエラーが発生しました: {e}")
             raise
+
+    def vacuum(self):
+        """データベースのVACUUM処理を実行してファイルサイズを最適化"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("VACUUM")
+            self.conn.commit()
+            print("データベースの最適化が完了しました。")
+        except Exception as e:
+            print(f"データベースの最適化中にエラーが発生しました: {e}")

@@ -64,6 +64,15 @@ def main(delete_old_data=None, update_add_active=False, update_channel=False):
     # update_channel フラグを渡す
     db.initialize(update_channel=update_channel)
 
+    # delete_old_data が指定されている場合は削除処理のみ実行
+    if delete_old_data:
+        print(f"{delete_old_data}ヶ月より古いデータを削除しています...")
+        db.delete_old_data(delete_old_data)
+        print("データベースを最適化しています...")
+        db.vacuum()
+        print("データ削除が完了しました。")
+        return
+
     # update_channel モードの場合はメッセージを表示
     if update_channel:
         print("channel_lists テーブルを更新し、channel_point カラムを追加しました。")
